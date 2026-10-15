@@ -44,10 +44,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const fetchUserData = async (fUser: FirebaseUser) => {
+  const fetchUserData = async (fUser: FirebaseUser, forceRefresh = false) => {
     try {
       // Check custom claims for server-authorized administrator status
-      const tokenResult = await fUser.getIdTokenResult();
+      const tokenResult = await fUser.getIdTokenResult(forceRefresh);
       setIsAdmin(!!tokenResult.claims.admin);
 
       const profile = await userRepository.getUserProfile(fUser.uid);
@@ -80,7 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshProfile = async () => {
     if (currentUser) {
-      await fetchUserData(currentUser);
+      await fetchUserData(currentUser, true);
     }
   };
 

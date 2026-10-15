@@ -48,10 +48,19 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
       ? property.imageUrls[0]
       : null;
 
-  const title = resolveBilingual(property.titleBn, property.titleEn);
-  const typeText = propertyTypeLabels[property.propertyType]?.[language] || property.propertyType;
-  const furnishingText = furnishingLabels[property.furnishing]?.[language] || property.furnishing;
-  const eligibilityText = eligibilityLabels[property.tenantEligibility]?.[language] || property.tenantEligibility;
+  const title = resolveBilingual(property.titleBn, property.titleEn) || property.titleBn || '';
+  const typeText =
+    (property.propertyType && propertyTypeLabels[property.propertyType]?.[language]) ||
+    property.propertyType ||
+    '';
+  const furnishingText =
+    (property.furnishing && furnishingLabels[property.furnishing]?.[language]) ||
+    property.furnishing ||
+    '';
+  const eligibilityText =
+    (property.tenantEligibility && eligibilityLabels[property.tenantEligibility]?.[language]) ||
+    property.tenantEligibility ||
+    '';
 
   return (
     <article className="group bg-white rounded-2xl border border-[#E8E6DF] overflow-hidden hover:border-[#B8B4AA] transition-all flex flex-col h-full shadow-xs">
