@@ -1,0 +1,248 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Public user profile storing non-sensitive role and display details",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Authenticated user UID" },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "selectedRole": {
+          "type": "string",
+          "enum": ["tenant", "landlord_or_agent", "service_provider"]
+        },
+        "area": { "type": "string", "maxLength": 60 },
+        "language": { "type": "string", "enum": ["bn", "en"] },
+        "status": { "type": "string", "enum": ["active", "suspended", "deleted"] },
+        "onboardingComplete": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "displayName", "selectedRole", "area", "language", "status", "onboardingComplete"]
+    },
+    "PrivateProfile": {
+      "title": "PrivateProfile",
+      "description": "Private profile storing sensitive contact preferences and consent records",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "phone": { "type": "string", "maxLength": 20 },
+        "contactPreference": { "type": "string", "enum": ["phone", "whatsapp", "email"] },
+        "consentVersion": { "type": "string", "maxLength": 20 },
+        "consentedAt": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "phone", "contactPreference", "consentVersion"]
+    },
+    "Property": {
+      "title": "Property",
+      "description": "Rental property document containing public specs and privateAddress field",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "landlordId": { "type": "string" },
+        "titleBn": { "type": "string", "maxLength": 140 },
+        "titleEn": { "type": "string", "maxLength": 140 },
+        "descriptionBn": { "type": "string", "maxLength": 2000 },
+        "descriptionEn": { "type": "string", "maxLength": 2000 },
+        "propertyType": {
+          "type": "string",
+          "enum": ["apartment", "house", "room", "sublet", "mess_seat"]
+        },
+        "monthlyRent": { "type": "number" },
+        "deposit": { "type": "number" },
+        "serviceCharge": { "type": "number" },
+        "area": { "type": "string", "maxLength": 60 },
+        "neighbourhood": { "type": "string", "maxLength": 100 },
+        "privateAddress": { "type": "string", "maxLength": 300 },
+        "bedrooms": { "type": "number" },
+        "bathrooms": { "type": "number" },
+        "sizeSqFt": { "type": "number" },
+        "furnishing": {
+          "type": "string",
+          "enum": ["unfurnished", "semi_furnished", "furnished"]
+        },
+        "tenantEligibility": {
+          "type": "string",
+          "enum": ["family", "bachelor_male", "bachelor_female", "any"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "pending_review", "published", "rejected", "expired", "rented", "suspended"]
+        },
+        "rejectionReason": { "type": "string", "maxLength": 500 },
+        "availableFrom": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "landlordId", "titleBn", "propertyType", "monthlyRent", "area", "status"]
+    },
+    "PropertyPrivate": {
+      "title": "PropertyPrivate",
+      "description": "Owner and admin confidential property data isolating privateAddress from public property documents",
+      "type": "object",
+      "properties": {
+        "propertyId": { "type": "string" },
+        "landlordId": { "type": "string" },
+        "privateAddress": { "type": "string", "maxLength": 300 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["propertyId", "landlordId", "privateAddress"]
+    },
+    "Favourite": {
+      "title": "Favourite",
+      "description": "Saved property bookmark for tenant",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "propertyId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "propertyId"]
+    },
+    "Visit": {
+      "title": "Visit",
+      "description": "Property inspection visit request",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "propertyId": { "type": "string" },
+        "tenantId": { "type": "string" },
+        "landlordId": { "type": "string" },
+        "preferredDate": { "type": "string" },
+        "preferredTime": { "type": "string", "maxLength": 50 },
+        "note": { "type": "string", "maxLength": 300 },
+        "status": {
+          "type": "string",
+          "enum": ["requested", "confirmed", "declined", "cancelled", "completed"]
+        },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "propertyId", "tenantId", "landlordId", "preferredDate", "status"]
+    },
+    "ServiceProvider": {
+      "title": "ServiceProvider",
+      "description": "Service provider profile with verified trades and areas",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "experienceSummary": { "type": "string", "maxLength": 500 },
+        "workingHours": { "type": "string", "maxLength": 100 },
+        "verificationStatus": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "displayName", "verificationStatus", "status"]
+    },
+    "ServiceRequest": {
+      "title": "ServiceRequest",
+      "description": "Customer household service request",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerId": { "type": "string" },
+        "assignedProviderId": { "type": "string" },
+        "category": {
+          "type": "string",
+          "enum": ["moving", "cleaning", "plumbing", "electrical", "ac_service", "appliance_repair"]
+        },
+        "area": { "type": "string", "maxLength": 60 },
+        "preferredDate": { "type": "string" },
+        "preferredTime": { "type": "string", "maxLength": 50 },
+        "description": { "type": "string", "maxLength": 800 },
+        "contactPreference": { "type": "string", "enum": ["phone", "whatsapp"] },
+        "status": {
+          "type": "string",
+          "enum": ["requested", "reviewing", "assigned", "in_progress", "completed", "disputed", "cancelled"]
+        },
+        "adminNote": { "type": "string", "maxLength": 500 },
+        "cancellationReason": { "type": "string", "maxLength": 500 },
+        "disputeReason": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "customerId", "category", "area", "description", "status"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "User-submitted report regarding property or user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "reporterId": { "type": "string" },
+        "targetType": { "type": "string", "enum": ["property", "user", "provider", "service_request"] },
+        "targetId": { "type": "string" },
+        "reason": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 800 },
+        "status": { "type": "string", "enum": ["open", "reviewing", "resolved", "dismissed"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "reporterId", "targetType", "targetId", "status"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Server-only immutable audit log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "actorId": { "type": "string" },
+        "action": { "type": "string", "maxLength": 100 },
+        "targetType": { "type": "string", "maxLength": 50 },
+        "targetId": { "type": "string" },
+        "reason": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "actorId", "action", "targetType", "targetId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile collection containing non-sensitive identity data"
+    },
+    "/privateProfiles/{userId}": {
+      "schema": "PrivateProfile",
+      "description": "Sensitive profile data accessible strictly by document owner"
+    },
+    "/properties/{propertyId}": {
+      "schema": "Property",
+      "description": "Rental property listings with private address protection"
+    },
+    "/propertyPrivate/{propertyId}": {
+      "schema": "PropertyPrivate",
+      "description": "Confidential property private address data accessible strictly by owner and server-authorized administrator"
+    },
+    "/favourites/{favouriteId}": {
+      "schema": "Favourite",
+      "description": "User-specific property bookmarks"
+    },
+    "/visits/{visitId}": {
+      "schema": "Visit",
+      "description": "Property inspection visit requests"
+    },
+    "/serviceProviders/{providerId}": {
+      "schema": "ServiceProvider",
+      "description": "Verified service provider profiles"
+    },
+    "/serviceRequests/{requestId}": {
+      "schema": "ServiceRequest",
+      "description": "Household service requests with role-gated access"
+    },
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Reports submitted by users for moderation"
+    },
+    "/auditLogs/{auditId}": {
+      "schema": "AuditLog",
+      "description": "Immutable administrative audit trail"
+    }
+  }
+}

@@ -1,0 +1,278 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 0. GLOBAL DEFAULT DENY CATCH-ALL
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- REUSABLE SECURITY HELPERS ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.admin == true;
+    }
+
+    // 1. USERS COLLECTION (/users/{userId})
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      
+      // Document creation on onboarding:
+      // - Must match authenticated uid
+      // - Disallow admin role self-selection
+      // - Initial status must be active
+      allow create: if isSignedIn() 
+        && request.auth.uid == userId
+        && incoming().uid == userId
+        && incoming().selectedRole in ['tenant', 'landlord_or_agent', 'service_provider']
+        && incoming().status == 'active';
+
+      // Updates: user cannot change uid, selectedRole, or status directly
+      allow update: if isOwner(userId)
+        && incoming().uid == existing().uid
+        && incoming().selectedRole == existing().selectedRole
+        && incoming().status == existing().status
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName', 'photoURL', 'area', 'language', 'onboardingComplete', 'updatedAt'
+        ]);
+
+      allow delete: if isAdmin();
+    }
+
+    // 2. PRIVATE PROFILES (/privateProfiles/{userId})
+    // Isolated PII: No public read, accessible ONLY by document owner or authorized admin
+    match /privateProfiles/{userId} {
+      allow get, update, create: if isOwner(userId);
+      allow list: if false;
+      allow delete: if false;
+    }
+
+    // 3. PROPERTIES COLLECTION (/properties/{propertyId})
+    match /properties/{propertyId} {
+      // Public can only get published properties. Owner/Admin can see drafts & under review.
+      allow get: if resource.data.status == 'published'
+        || (isSignedIn() && (resource.data.landlordId == request.auth.uid || isAdmin()));
+
+      // Public list queries strictly restricted to published listings;
+      // Landlords can list their own properties; Admins can list moderation queue
+      allow list: if resource.data.status == 'published'
+        || (isSignedIn() && (resource.data.landlordId == request.auth.uid || isAdmin()));
+
+      // Landlord creation: must belong to authenticated user, initial status MUST be draft
+      allow create: if isSignedIn()
+        && isValidId(propertyId)
+        && request.auth.uid == incoming().landlordId
+        && incoming().status == 'draft'
+        && incoming().monthlyRent is number && incoming().monthlyRent > 0;
+
+      // Updates:
+      // Allowed Phase 3 transitions only:
+      // - draft -> pending_review
+      // - rejected -> pending_review
+      // - pending_review -> published (admin only)
+      // - pending_review -> rejected (admin only with mandatory rejectionReason)
+      // Plus owner edits to draft (draft -> draft) or rejected (rejected -> rejected)
+      // All other transitions in Phase 3 are strictly blocked.
+      allow update: if isSignedIn() && (
+        (
+          resource.data.landlordId == request.auth.uid
+          && incoming().landlordId == existing().landlordId
+          && (
+            (existing().status == 'draft' && incoming().status in ['draft', 'pending_review'])
+            || (existing().status == 'rejected' && incoming().status in ['rejected', 'pending_review'])
+          )
+          && !incoming().diff(existing()).affectedKeys().hasAny([
+            'publishedAt', 'expiresAt', 'rejectionReason', 'moderationNote'
+          ])
+        )
+        || (
+          isAdmin()
+          && (
+            (existing().status == 'pending_review' && incoming().status == 'published')
+            || (existing().status == 'pending_review' && incoming().status == 'rejected' && incoming().rejectionReason is string && incoming().rejectionReason.size() > 0)
+          )
+        )
+      );
+
+      // Only draft properties can be deleted by owner
+      allow delete: if isSignedIn() && resource.data.landlordId == request.auth.uid && existing().status == 'draft';
+    }
+
+    // 4. PROPERTY PRIVATE DATA (/propertyPrivate/{propertyId})
+    // Isolated private address: Never publicly readable. Accessible ONLY by property owner or server-authorized admin.
+    match /propertyPrivate/{propertyId} {
+      allow get: if isSignedIn() && (resource.data.landlordId == request.auth.uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isSignedIn()
+        && isValidId(propertyId)
+        && request.auth.uid == incoming().landlordId
+        && incoming().propertyId == propertyId
+        && incoming().privateAddress is string;
+      allow update: if isSignedIn() && (
+        (
+          resource.data.landlordId == request.auth.uid
+          && incoming().landlordId == existing().landlordId
+          && incoming().propertyId == existing().propertyId
+          && incoming().diff(existing()).affectedKeys().hasOnly(['privateAddress', 'updatedAt'])
+        )
+        || isAdmin()
+      );
+      allow delete: if isSignedIn() && resource.data.landlordId == request.auth.uid;
+    }
+
+    // 4. PROPERTY FAVOURITES (/favourites/{favouriteId})
+    match /favourites/{favouriteId} {
+      allow get, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // 5. VISITS COLLECTION (/visits/{visitId})
+    match /visits/{visitId} {
+      allow get: if isSignedIn() && (
+        resource.data.tenantId == request.auth.uid
+        || resource.data.landlordId == request.auth.uid
+        || isAdmin()
+      );
+
+      allow list: if isSignedIn() && (
+        resource.data.tenantId == request.auth.uid
+        || resource.data.landlordId == request.auth.uid
+      );
+
+      // Tenant can create initial visit request
+      allow create: if isSignedIn()
+        && incoming().tenantId == request.auth.uid
+        && incoming().status == 'requested';
+
+      // Updates: Tenant can cancel; Landlord can confirm or decline; Admin can resolve
+      allow update: if isSignedIn() && (
+        (
+          resource.data.tenantId == request.auth.uid
+          && incoming().status == 'cancelled'
+          && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'cancelledAt', 'updatedAt'])
+        )
+        || (
+          resource.data.landlordId == request.auth.uid
+          && incoming().status in ['confirmed', 'declined']
+          && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'confirmedAt', 'updatedAt'])
+        )
+        || isAdmin()
+      );
+
+      allow delete: if false;
+    }
+
+    // 6. SERVICE PROVIDERS (/serviceProviders/{providerId})
+    match /serviceProviders/{providerId} {
+      allow get: if resource.data.verificationStatus == 'approved'
+        || (isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin()));
+
+      allow list: if resource.data.verificationStatus == 'approved'
+        || (isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin()));
+
+      // Provider creates initial profile; cannot self-approve
+      allow create: if isSignedIn()
+        && incoming().userId == request.auth.uid
+        && incoming().verificationStatus == 'pending'
+        && incoming().status == 'active';
+
+      // Provider can update working details; cannot alter verificationStatus
+      allow update: if isSignedIn() && (
+        (
+          resource.data.userId == request.auth.uid
+          && incoming().userId == existing().userId
+          && incoming().verificationStatus == existing().verificationStatus
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'displayName', 'categories', 'serviceAreas', 'experienceSummary', 'workingHours', 'updatedAt'
+          ])
+        )
+        || isAdmin()
+      );
+
+      allow delete: if false;
+    }
+
+    // 7. SERVICE REQUESTS (/serviceRequests/{requestId})
+    match /serviceRequests/{requestId} {
+      allow get: if isSignedIn() && (
+        resource.data.customerId == request.auth.uid
+        || resource.data.assignedProviderId == request.auth.uid
+        || isAdmin()
+      );
+
+      allow list: if isSignedIn() && (
+        resource.data.customerId == request.auth.uid
+        || resource.data.assignedProviderId == request.auth.uid
+        || isAdmin()
+      );
+
+      // Customer creates request
+      allow create: if isSignedIn()
+        && incoming().customerId == request.auth.uid
+        && incoming().status == 'requested'
+        && incoming().category in ['moving', 'cleaning', 'plumbing', 'electrical', 'ac_service', 'appliance_repair'];
+
+      // Transitions:
+      // - Customer can cancel before in_progress
+      // - Assigned provider can move from assigned -> in_progress -> completed
+      // - Admin manages assignments
+      allow update: if isSignedIn() && (
+        (
+          resource.data.customerId == request.auth.uid
+          && existing().status in ['requested', 'reviewing', 'assigned']
+          && incoming().status == 'cancelled'
+          && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'cancellationReason', 'updatedAt'])
+        )
+        || (
+          resource.data.assignedProviderId == request.auth.uid
+          && (
+            (existing().status == 'assigned' && incoming().status == 'in_progress')
+            || (existing().status == 'in_progress' && incoming().status == 'completed')
+          )
+          && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'completedAt', 'updatedAt'])
+        )
+        || isAdmin()
+      );
+
+      allow delete: if false;
+    }
+
+    // 8. REPORTS COLLECTION (/reports/{reportId})
+    match /reports/{reportId} {
+      allow create: if isSignedIn() && incoming().reporterId == request.auth.uid && incoming().status == 'open';
+      allow get: if isSignedIn() && (resource.data.reporterId == request.auth.uid || isAdmin());
+      allow list: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // 9. AUDIT LOGS (/auditLogs/{auditId})
+    // Server-only immutable audit log: normal users cannot read, write, or delete
+    match /auditLogs/{auditId} {
+      allow get, list: if isAdmin();
+      allow write: if false;
+    }
+  }
+}

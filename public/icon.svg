@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F4C3A" />
+      <stop offset="100%" stop-color="#0A3629" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+  </defs>
+  <!-- Background rounded canvas -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)" />
+  
+  <!-- Subtle roof ridge glow -->
+  <path d="M256 92 L104 224 L142 224 L256 126 L370 224 L408 224 Z" fill="#E8F2EE" opacity="0.9" />
+  
+  <!-- House Outer Silhouette -->
+  <path d="M142 224 L142 396 C142 409 153 420 166 420 L346 420 C359 420 370 409 370 396 L370 224" 
+        fill="none" stroke="#FAF9F5" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <!-- Integrated Key: Bow, Shank, and Teeth -->
+  <!-- Key Bow (Top circle) -->
+  <circle cx="256" cy="236" r="44" fill="none" stroke="url(#accent)" stroke-width="22" />
+  <circle cx="256" cy="236" r="14" fill="#FAF9F5" />
+  
+  <!-- Key Shaft -->
+  <path d="M256 280 L256 386" stroke="url(#accent)" stroke-width="22" stroke-linecap="round" />
+  
+  <!-- Key Teeth -->
+  <path d="M256 340 L288 340" stroke="url(#accent)" stroke-width="18" stroke-linecap="round" />
+  <path d="M256 376 L298 376" stroke="url(#accent)" stroke-width="18" stroke-linecap="round" />
+</svg>

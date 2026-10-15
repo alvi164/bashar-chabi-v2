@@ -1,0 +1,6 @@
+{
+  "name": "Bashar Chabi",
+  "description": "বাসার চাবি, এখন আপনার হাতে। Discover rental homes, request visits and find essential household services in Dhaka.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
