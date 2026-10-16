@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Property } from '../../types/index.ts';
+import { Property, PropertyType, FurnishingStatus, TenantEligibility } from '../../types/index.ts';
 import { formatTaka } from '../../utils/currency.ts';
 import { formatDhakaDate } from '../../utils/date.ts';
 import { useTranslation } from '../../localization/LanguageContext.tsx';
 
-interface PropertyCardProps {
+export interface PropertyCardProps {
   property: Property;
   onSaveFavourite?: (propertyId: string) => void;
   isFavourite?: boolean;
@@ -20,7 +20,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   const [imageFailed, setImageFailed] = useState(false);
 
   // Property type labels
-  const propertyTypeLabels: Record<string, { bn: string; en: string }> = {
+  const propertyTypeLabels: Partial<Record<PropertyType, { bn: string; en: string }>> = {
     apartment: { bn: 'অ্যাপার্টমেন্ট', en: 'Apartment' },
     house: { bn: 'সম্পূর্ণ বাড়ি', en: 'Full House' },
     room: { bn: 'সাবলেট / রুম', en: 'Single Room' },
@@ -29,14 +29,14 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   };
 
   // Furnishing labels
-  const furnishingLabels: Record<string, { bn: string; en: string }> = {
+  const furnishingLabels: Partial<Record<FurnishingStatus, { bn: string; en: string }>> = {
     unfurnished: { bn: 'আসবাবপত্রহীন', en: 'Unfurnished' },
     semi_furnished: { bn: 'আংশিক আসবাবপত্র', en: 'Semi-Furnished' },
     furnished: { bn: 'পূর্ণাঙ্গ আসবাবপত্র', en: 'Furnished' },
   };
 
   // Tenant eligibility labels
-  const eligibilityLabels: Record<string, { bn: string; en: string }> = {
+  const eligibilityLabels: Partial<Record<TenantEligibility, { bn: string; en: string }>> = {
     family: { bn: 'পরিবার', en: 'Family' },
     bachelor_male: { bn: 'ব্যাচেলর (ছেলে)', en: 'Bachelor (Male)' },
     bachelor_female: { bn: 'ব্যাচেলর (মেয়ে)', en: 'Bachelor (Female)' },
