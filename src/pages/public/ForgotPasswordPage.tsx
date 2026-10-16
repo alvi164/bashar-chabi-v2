@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../../localization/LanguageContext.tsx';
 import { useAuth } from '../../firebase/auth.tsx';
+import { mapAuthError } from '../../firebase/errors.ts';
 import { Input } from '../../components/common/Input.tsx';
 import { Button } from '../../components/common/Button.tsx';
 import { Logo } from '../../components/common/Logo.tsx';
@@ -16,18 +17,25 @@ export const ForgotPasswordPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setError(
+        language === 'bn'
+          ? 'অনুগ্রহ করে সঠিক ইমেইল ঠিকানা প্রদান করুন।'
+          : 'Please enter a valid email address.'
+      );
+      return;
+    }
+
     setError('');
     setLoading(true);
     try {
-      await sendPasswordReset(email);
+      await sendPasswordReset(cleanEmail);
       setSent(true);
     } catch (err: unknown) {
       console.error('Password reset error:', err);
-      setError(
-        language === 'bn'
-          ? 'রিসেট লিংক পাঠানো যায়নি। ইমেইল ঠিকানাটি সঠিক কিনা পুনরায় যাচাই করুন।'
-          : 'Could not send reset link. Please check your email and try again.'
-      );
+      setError(mapAuthError(err, language));
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../localization/LanguageContext.tsx';
 import { useAuth } from '../../firebase/auth.tsx';
+import { mapAuthError } from '../../firebase/errors.ts';
 import { Input } from '../../components/common/Input.tsx';
 import { Select } from '../../components/common/Select.tsx';
 import { Button } from '../../components/common/Button.tsx';
@@ -10,7 +11,7 @@ import { NormalUserRole } from '../../types/index.ts';
 
 export const RegisterPage: React.FC = () => {
   const { language, t } = useTranslation();
-  const { registerWithEmail } = useAuth();
+  const { registerWithEmail, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const [displayName, setDisplayName] = useState('');
@@ -44,34 +45,55 @@ export const RegisterPage: React.FC = () => {
       return;
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanDisplayName = displayName.trim();
+
+    if (!cleanDisplayName) {
+      setError(
+        language === 'bn' ? 'অনুগ্রহ করে আপনার নাম প্রদান করুন' : 'Please provide your full name'
+      );
+      return;
+    }
+
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setError(
+        language === 'bn' ? 'সঠিক ইমেইল ঠিকানা প্রদান করুন' : 'Please provide a valid email address'
+      );
+      return;
+    }
+
+    if (!password || password.length < 6) {
+      setError(
+        language === 'bn'
+          ? 'পাসওয়ার্ড অত্যন্ত দুর্বল। কমপক্ষে ৬টি অক্ষর বা সংখ্যার মিশ্রণ ব্যবহার করুন।'
+          : 'Password must be at least 6 characters long.'
+      );
+      return;
+    }
+
     setError('');
     setLoading(true);
 
     try {
-      await registerWithEmail(email, password, displayName, role, area);
+      await registerWithEmail(cleanEmail, password, cleanDisplayName, role, area);
       navigate('/dashboard');
     } catch (err: unknown) {
       console.error('Registration error:', err);
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('email-already-in-use')) {
-        setError(
-          language === 'bn'
-            ? 'এই ইমেইল দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট তৈরি করা হয়েছে।'
-            : 'This email is already registered.'
-        );
-      } else if (msg.includes('weak-password')) {
-        setError(
-          language === 'bn'
-            ? 'পাসওয়ার্ড অত্যন্ত দুর্বল। কমপক্ষে ৬টি অক্ষর ব্যবহার করুন।'
-            : 'Password should be at least 6 characters.'
-        );
-      } else {
-        setError(
-          language === 'bn'
-            ? 'নিবন্ধন সম্পন্ন করা যায়নি। পুনরায় চেষ্টা করুন।'
-            : 'Registration failed. Please try again.'
-        );
-      }
+      setError(mapAuthError(err, language));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await signInWithGoogle();
+      navigate('/dashboard');
+    } catch (err: unknown) {
+      console.error('Google Sign Up error:', err);
+      setError(mapAuthError(err, language));
     } finally {
       setLoading(false);
     }
@@ -94,6 +116,41 @@ export const RegisterPage: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-3xl border border-[#E8E6DF] p-6 sm:p-8 space-y-5 shadow-xs">
+        {/* Google Sign Up Button */}
+        <button
+          type="button"
+          disabled={loading}
+          onClick={handleGoogleSignUp}
+          className="w-full min-h-[44px] rounded-xl border border-[#D8D5CD] bg-white hover:bg-[#FAF9F5] text-sm font-medium text-[#192420] flex items-center justify-center gap-3 transition-colors cursor-pointer disabled:opacity-50"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24">
+            <path
+              fill="#4285F4"
+              d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.34 24 12 24z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.99 0 12s.45 3.85 1.24 5.42l4.04-3.15z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.93 6.72-4.93z"
+            />
+          </svg>
+          <span>{language === 'bn' ? 'গুগল দিয়ে দ্রুত নিবন্ধন করুন' : 'Continue with Google'}</span>
+        </button>
+
+        <div className="relative flex items-center justify-center">
+          <div className="border-t border-[#E8E6DF] w-full" />
+          <span className="bg-white px-3 text-xs text-[#738079] uppercase">
+            {language === 'bn' ? 'অথবা ইমেইল দিয়ে' : 'or with email'}
+          </span>
+        </div>
+
         {error && (
           <div className="p-3 rounded-xl bg-[#FEF2F2] border border-[#FCA5A5] text-xs text-[#DC2626] font-medium">
             {error}

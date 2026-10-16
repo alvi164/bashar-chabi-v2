@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from '../../localization/LanguageContext.tsx';
+import { useAuth } from '../../firebase/auth.tsx';
 
 export const MobileBottomBar: React.FC = () => {
   const { t } = useTranslation();
+  const { currentUser } = useAuth();
   const location = useLocation();
 
   const isActive = (path: string) => {
@@ -49,8 +51,8 @@ export const MobileBottomBar: React.FC = () => {
       ),
     },
     {
-      to: '/login',
-      label: t.navLogin,
+      to: currentUser ? '/dashboard' : '/login',
+      label: currentUser ? t.navDashboard : t.navLogin,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../localization/LanguageContext.tsx';
 import { useAuth } from '../../firebase/auth.tsx';
+import { mapAuthError } from '../../firebase/errors.ts';
 import { Input } from '../../components/common/Input.tsx';
 import { Button } from '../../components/common/Button.tsx';
 import { Logo } from '../../components/common/Logo.tsx';
@@ -31,27 +32,34 @@ export const LoginPage: React.FC = () => {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail) {
+      setError(
+        language === 'bn'
+          ? 'অনুগ্রহ করে আপনার ইমেইল ঠিকানা প্রদান করুন।'
+          : 'Please enter your email address.'
+      );
+      return;
+    }
+
+    if (!password) {
+      setError(
+        language === 'bn'
+          ? 'অনুগ্রহ করে পাসওয়ার্ড প্রদান করুন।'
+          : 'Please enter your password.'
+      );
+      return;
+    }
+
     setError('');
     setLoading(true);
     try {
-      await loginWithEmail(email, password);
+      await loginWithEmail(cleanEmail, password);
       navigate('/dashboard');
     } catch (err: unknown) {
       console.error('Login error:', err);
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('user-not-found') || msg.includes('wrong-password') || msg.includes('invalid-credential')) {
-        setError(
-          language === 'bn'
-            ? 'ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।'
-            : 'Invalid email or password.'
-        );
-      } else {
-        setError(
-          language === 'bn'
-            ? 'লগইন করতে সমস্যা হচ্ছে। আবার চেষ্টা করুন।'
-            : 'Login failed. Please verify credentials and try again.'
-        );
-      }
+      setError(mapAuthError(err, language));
     } finally {
       setLoading(false);
     }
@@ -65,11 +73,7 @@ export const LoginPage: React.FC = () => {
       navigate('/dashboard');
     } catch (err: unknown) {
       console.error('Google Sign In error:', err);
-      setError(
-        language === 'bn'
-          ? 'গুগল সাইন-ইন সম্পন্ন হয়নি। পপ-আপ বন্ধ করা হয়ে থাকতে পারে।'
-          : 'Google sign-in was not completed.'
-      );
+      setError(mapAuthError(err, language));
     } finally {
       setLoading(false);
     }

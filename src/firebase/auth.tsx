@@ -127,7 +127,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithEmail = async (email: string, pass: string) => {
-    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    const cleanEmail = email.trim().toLowerCase();
+    const cred = await signInWithEmailAndPassword(auth, cleanEmail, pass);
     await fetchUserData(cred.user);
   };
 
@@ -138,15 +139,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     role: NormalUserRole,
     area: string
   ) => {
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanDisplayName = displayName.trim() || 'User';
+    const cred = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
     const fUser = cred.user;
 
-    await updateProfile(fUser, { displayName });
+    await updateProfile(fUser, { displayName: cleanDisplayName });
 
     const now = new Date().toISOString();
     const newUser: User = {
       uid: fUser.uid,
-      displayName,
+      displayName: cleanDisplayName,
       selectedRole: role,
       area,
       language: 'bn',
@@ -184,7 +187,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const sendPasswordReset = async (email: string) => {
-    await sendPasswordResetEmail(auth, email);
+    const cleanEmail = email.trim().toLowerCase();
+    await sendPasswordResetEmail(auth, cleanEmail);
   };
 
   const signOut = async () => {

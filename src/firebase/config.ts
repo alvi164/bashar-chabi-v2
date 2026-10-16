@@ -1,13 +1,30 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
+import { initializeApp, getApps, getApp, FirebaseOptions } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator, doc, getDocFromServer } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+import staticConfig from '../../firebase-applet-config.json';
+
+// Construct environment-driven configuration with fallback to bashar-chabi static config
+export const firebaseConfig: FirebaseOptions = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || staticConfig.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || staticConfig.authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || staticConfig.projectId || 'bashar-chabi',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || staticConfig.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || staticConfig.messagingSenderId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || staticConfig.appId,
+};
 
 // Initialize Firebase singleton
 export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// CRITICAL: Initialize Firestore with the exact firestoreDatabaseId from configuration
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// CRITICAL: Initialize Firestore with default database or explicitly designated custom database ID
+const firestoreDbId =
+  import.meta.env.VITE_FIRESTORE_DATABASE_ID ||
+  staticConfig.firestoreDatabaseId;
+
+export const db =
+  firestoreDbId && firestoreDbId !== '(default)'
+    ? getFirestore(app, firestoreDbId)
+    : getFirestore(app);
 
 // Initialize Firebase Auth
 export const auth = getAuth(app);

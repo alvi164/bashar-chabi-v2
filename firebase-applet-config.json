@@ -1,12 +1,12 @@
 {
-  "projectId": "gen-lang-client-0003253941",
-  "appId": "1:444427952:web:581f0cc2007d8f5452d575",
-  "apiKey": "AIzaSyBqFE-6cdvwkZ6O7Peo5Ybl1bTX8BpMIyg",
-  "authDomain": "gen-lang-client-0003253941.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-basharchabi-b64eaaee-4496-42d8-8eb2-a87e42f82c94",
-  "storageBucket": "gen-lang-client-0003253941.firebasestorage.app",
-  "messagingSenderId": "444427952",
+  "projectId": "bashar-chabi",
+  "appId": "1:715097529890:web:fc45f074a0152bf0e3747b",
+  "apiKey": "AIzaSyAs9ATG3WKk41iIMhg5hrGGS-dal35MU-8",
+  "authDomain": "bashar-chabi.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "bashar-chabi.firebasestorage.app",
+  "messagingSenderId": "715097529890",
   "measurementId": "",
-  "oAuthClientId": "444427952-h7t1ej0nv8p8oog3c93fvqvkq81cntvo.apps.googleusercontent.com",
+  "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }
